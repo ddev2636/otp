@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <sstream>
-#include <openssl/sha.h>
+#include <iomanip> // Include this header for setw and setfill
 
 using namespace std;
 
@@ -13,9 +13,20 @@ OTPGenerator::OTPGenerator(const std::string &secret, const std::string &message
 
 std::string OTPGenerator::generateOTP()
 {
+    // Create a TimeUtility object to get the current time interval
+    TimeUtility timeUtility;
+    unsigned long long timeInterval = timeUtility.getTimeInterval();
+    message = std::to_string(timeInterval); // Update message with the current time interval
+
     unsigned char *hmacResult = HashingUtility::generateHMAC(secret, message);
     int truncatedValue = truncateHMAC(hmacResult);
-    return std::to_string(truncatedValue).substr(0, otpLength); // Limiting OTP length
+
+    // Format OTP to match specified length
+    std::ostringstream otpStream;
+    otpStream << std::setw(otpLength) << std::setfill('0')
+              << (truncatedValue % static_cast<int>(std::pow(10, otpLength)));
+
+    return otpStream.str();
 }
 
 int OTPGenerator::truncateHMAC(unsigned char *hmacResult)
@@ -25,5 +36,5 @@ int OTPGenerator::truncateHMAC(unsigned char *hmacResult)
               (hmacResult[offset + 1] & 0xff) << 16 |
               (hmacResult[offset + 2] & 0xff) << 8 |
               (hmacResult[offset + 3] & 0xff);
-    return otp % 1000000; // Ensure OTP is a 6-digit number
+    return otp;
 }
